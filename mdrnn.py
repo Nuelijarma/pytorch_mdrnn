@@ -19,10 +19,9 @@ def prev_seq_flat(idx, k, shape):
     idx_bis = ravel_multi_index(idx_bis, shape)
     return idx_bis
 
-def prev_all(a, idx, shape):
-    def default(): return torch.zeros(a.shape[1:])
-    return [a[prev_seq_flat(idx, k, shape)] if idx[k] else default() for k in range(len(idx))]
-    # return [a[prev_seq(idx,k)].detach() if idx[k] else 0 for k in range(len(idx))]
+def prev_all(a, idx, shape_idx, shape_t):
+    def default(): return torch.zeros(shape_t)
+    return [a[prev_seq_flat(idx, k, shape_idx)] if idx[k] else default() for k in range(len(idx))]
 
 class MDRNN(torch.nn.Module):
     """ [todo] """
@@ -103,15 +102,17 @@ class MDLSTM(torch.nn.Module):
         # this. Filling the tensors with a loop would be doing in-place
         # operations, and PyTorch does not like in-place operations, even though
         # in this specific case this should cause no issue.
-        dimensions = x.shape[:-2]
+        shape_idx = x.shape[:-2]
         batch_size = x.shape[-2]
-        s = torch.empty((0, batch_size, self.size_out)) # Cell state
-        h = torch.empty((0, batch_size, self.size_out)) # Hidden state
-        for idx in self.iter_idx(dimensions):
-            s_new, h_new = self.mdlstmcell(x[idx], (prev_all(s, idx, dimensions), prev_all(h, idx, dimensions)))
-            s = torch.cat((s, s_new.reshape((1, batch_size, self.size_out))))
-            h = torch.cat((h, h_new.reshape((1, batch_size, self.size_out))))
-        h = torch.reshape(s, (*dimensions, batch_size, self.size_out))
+        shape_t = (batch_size, self.size_out)
+        s = []
+        h = []
+        for idx in self.iter_idx(shape_idx):
+            s_new, h_new = self.mdlstmcell(x[idx], (prev_all(s, idx, shape_idx, shape_t), prev_all(h, idx, shape_idx, shape_t)))
+            s.append(s_new.reshape((1, *shape_t)))
+            h.append(h_new.reshape((1, *shape_t)))
+        h = torch.cat(h)
+        h = torch.reshape(h, (*shape_idx, *shape_t))
         return h
 
 class MDLSTMCell(torch.nn.Module):
