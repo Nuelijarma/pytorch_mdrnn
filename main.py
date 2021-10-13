@@ -78,7 +78,7 @@ class MyNet(torch.nn.Module):
 
 if __name__=="__main__":
     # Load data
-    batch_size = 1
+    batch_size = 2
     data = AirFreight(path="./data/afreightdata")
     data_train, data_test, data_val = random_split(data, [250, 150, 55])
 
@@ -99,7 +99,7 @@ if __name__=="__main__":
 
     # Train network
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=1e-6, momentum=0.9)
+    optimizer = torch.optim.SGD(net.parameters(), lr=1e-5, momentum=0.9)
     print_step = 5
     for epoch in range(2):
         running_loss = 0.0
@@ -124,7 +124,6 @@ if __name__=="__main__":
             test_loss = 0.
             test_acc = 0.
             for i, data in enumerate(test_loader):
-                print(i)
                 img, lbl = data
                 outputs = net(img)
                 # Test loss
@@ -149,6 +148,6 @@ if __name__=="__main__":
             _, predicted = torch.max(outputs.data, dim=1)
             test_acc += (predicted==lbl).sum().item() / (120*160)
         val_loss /= len(val_loader)
-        val_acc =/ len(val_loader)
+        val_acc /= len(val_loader)
         print(f"Validation loss: {val_acc}.")
         print(f"Validation accuracy: {100*test_acc} (pixel classification)/")
